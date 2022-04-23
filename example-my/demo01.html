@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+  <div id="app"></div>
+  <script src="../dist/vue.js"></script>
+  <script>
+    const vm = new Vue({
+      created() {
+        console.log("我是父组件 created")
+      },
+      mounted() {
+        console.log("我是父组件 mounted")
+      },
+      el: "#app",
+      template: `<div>
+        我是父组件 div
+        <span>我是span，你好{{name}}</span>
+        <my-btn/>
+        </div>`,
+      data: {
+        name: "vue"
+      },
+      components: {
+        "my-btn": {
+          template: `<h3>我是子组件</h3>`,
+          created() {
+            console.log("我是子组件---------- created")
+          },
+          mounted() {
+            console.log("我是子组件----------- mounted")
+          },
+        }
+      }
+    })
+</script>
+</body>
+
+</html>

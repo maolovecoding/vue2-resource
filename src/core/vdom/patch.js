@@ -66,7 +66,7 @@ function createKeyToOldIdx (children, beginIdx, endIdx) {
   }
   return map
 }
-
+// patch -> createPatchFunction -> __patch__
 export function createPatchFunction (backend) {
   let i, j
   const cbs = {}
@@ -122,6 +122,7 @@ export function createPatchFunction (backend) {
 
   let creatingElmInVPre = 0
 
+  // 创建真实节点
   function createElm (
     vnode,
     insertedVnodeQueue,
@@ -141,14 +142,16 @@ export function createPatchFunction (backend) {
     }
 
     vnode.isRootInsert = !nested // for transition enter check
+    // 先检查是否是组件 是组件就直接创建好 结束本轮循环了
     if (createComponent(vnode, insertedVnodeQueue, parentElm, refElm)) {
       return
     }
 
     const data = vnode.data
+    // 子节点数组 [vnode]
     const children = vnode.children
     const tag = vnode.tag
-    if (isDef(tag)) {
+    if (isDef(tag)) { // tag !== null tag !== undefined
       if (process.env.NODE_ENV !== 'production') {
         if (data && data.pre) {
           creatingElmInVPre++
@@ -165,6 +168,7 @@ export function createPatchFunction (backend) {
 
       vnode.elm = vnode.ns
         ? nodeOps.createElementNS(vnode.ns, tag)
+        // 创建元素节点 div
         : nodeOps.createElement(tag, vnode)
       setScope(vnode)
 
@@ -188,29 +192,34 @@ export function createPatchFunction (backend) {
           insert(parentElm, vnode.elm, refElm)
         }
       } else {
+        // 创建子节点  (vnode, [], )
         createChildren(vnode, children, insertedVnodeQueue)
         if (isDef(data)) {
+          // invoke 执行创建的钩子
           invokeCreateHooks(vnode, insertedVnodeQueue)
         }
+        // parent.insert(child)
         insert(parentElm, vnode.elm, refElm)
       }
 
       if (process.env.NODE_ENV !== 'production' && data && data.pre) {
         creatingElmInVPre--
       }
-    } else if (isTrue(vnode.isComment)) {
+    } else if (isTrue(vnode.isComment)) { // 注释
       vnode.elm = nodeOps.createComment(vnode.text)
       insert(parentElm, vnode.elm, refElm)
-    } else {
+    } else { // 文本节点
       vnode.elm = nodeOps.createTextNode(vnode.text)
       insert(parentElm, vnode.elm, refElm)
     }
   }
-
+  // 创建组件 真实组件节点
   function createComponent (vnode, insertedVnodeQueue, parentElm, refElm) {
+    // data
     let i = vnode.data
     if (isDef(i)) {
       const isReactivated = isDef(vnode.componentInstance) && i.keepAlive
+      // data -> hook -> init钩子
       if (isDef(i = i.hook) && isDef(i = i.init)) {
         i(vnode, false /* hydrating */)
       }
@@ -716,6 +725,7 @@ export function createPatchFunction (backend) {
   }
 
   return function patch (oldVnode, vnode, hydrating, removeOnly) {
+    debugger;
     // 要做删除的时候，patch(oldVNode, null) -> destroy
     if (isUndef(vnode)) {
       if (isDef(oldVnode)) invokeDestroyHook(oldVnode)

@@ -76,6 +76,7 @@ Vue.prototype.$mount = function (
         delimiters: options.delimiters,
         comments: options.comments
       }, this)
+      // render函数
       options.render = render
       options.staticRenderFns = staticRenderFns
 

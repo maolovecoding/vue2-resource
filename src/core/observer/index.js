@@ -178,7 +178,7 @@ export function defineReactive (
     configurable: true,
     get: function reactiveGetter () {
       // debugger
-      console.log("get---------",obj,key)
+      // console.log("get---------",obj,key)
       // 执行getter绑定obj
       const value = getter ? getter.call(obj) : val
       if (Dep.target) {

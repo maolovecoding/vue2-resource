@@ -29,6 +29,7 @@ export function FunctionalRenderContext (
   // gets a unique context - this is necessary for correct named slot check
   let contextVm
   if (hasOwn(parent, '_uid')) {
+    // 父级上下文
     contextVm = Object.create(parent)
     // $flow-disable-line
     contextVm._original = parent
@@ -58,7 +59,7 @@ export function FunctionalRenderContext (
     }
     return this.$slots
   }
-
+  // 作用域插槽
   Object.defineProperty(this, 'scopedSlots', ({
     enumerable: true,
     get () {
@@ -103,18 +104,19 @@ export function createFunctionalComponent (
   const propOptions = options.props
   if (isDef(propOptions)) {
     for (const key in propOptions) {
+      // 校验 props
       props[key] = validateProp(key, propOptions, propsData || emptyObject)
     }
   } else {
     if (isDef(data.attrs)) mergeProps(props, data.attrs)
     if (isDef(data.props)) mergeProps(props, data.props)
   }
-
+  // 创建函数式组件上下文
   const renderContext = new FunctionalRenderContext(
     data,
     props,
     children,
-    contextVm,
+    contextVm, // 上下文对象
     Ctor
   )
 

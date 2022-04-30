@@ -44,35 +44,38 @@ export function resolveAsyncComponent (
   factory: Function,
   baseCtor: Class<Component>
 ): Class<Component> | void {
+
+  // 如果有error 就渲染错误组件
   if (isTrue(factory.error) && isDef(factory.errorComp)) {
     return factory.errorComp
   }
-
+  // 渲染成功的结果
   if (isDef(factory.resolved)) {
     return factory.resolved
   }
-
+  // 正在渲染的组件实例
   const owner = currentRenderingInstance
   if (owner && isDef(factory.owners) && factory.owners.indexOf(owner) === -1) {
     // already pending
     factory.owners.push(owner)
   }
-
+  // 渲染loading组件
   if (isTrue(factory.loading) && isDef(factory.loadingComp)) {
     return factory.loadingComp
   }
 
   if (owner && !isDef(factory.owners)) {
     const owners = factory.owners = [owner]
+    // 标识异步组件
     let sync = true
     let timerLoading = null
     let timerTimeout = null
 
     ;(owner: any).$on('hook:destroyed', () => remove(owners, owner))
-
+    // forceRender 拿到所有的组件 强制更新
     const forceRender = (renderCompleted: boolean) => {
       for (let i = 0, l = owners.length; i < l; i++) {
-        (owners[i]: any).$forceUpdate()
+        (owners[i]: any).$forceUpdate() // 强制更新
       }
 
       if (renderCompleted) {
@@ -87,7 +90,7 @@ export function resolveAsyncComponent (
         }
       }
     }
-
+    // 传给用户的 resolve
     const resolve = once((res: Object | Class<Component>) => {
       // cache resolved
       factory.resolved = ensureCtor(res, baseCtor)
@@ -99,7 +102,7 @@ export function resolveAsyncComponent (
         owners.length = 0
       }
     })
-
+    // 传给用户的reject
     const reject = once(reason => {
       process.env.NODE_ENV !== 'production' && warn(
         `Failed to resolve async component: ${String(factory)}` +
@@ -110,16 +113,20 @@ export function resolveAsyncComponent (
         forceRender(true)
       }
     })
-
+    // 函数执行 传resolve，reject
     const res = factory(resolve, reject)
 
     if (isObject(res)) {
-      if (isPromise(res)) {
+      if (isPromise(res)) { // 是对象 Promise实例
         // () => Promise
         if (isUndef(factory.resolved)) {
+          // () => import("")
+          // 调用对象的then方法 成功则把获取到的结果给factory.resolved
+          //  factory.resolved 就是对应的组件
           res.then(resolve, reject)
         }
       } else if (isPromise(res.component)) {
+        // 用户自己写的特殊的组件 是一个promise
         res.component.then(resolve, reject)
 
         if (isDef(res.error)) {
@@ -127,6 +134,7 @@ export function resolveAsyncComponent (
         }
 
         if (isDef(res.loading)) {
+          // 将组件的loading赋予给factory.loadingComp
           factory.loadingComp = ensureCtor(res.loading, baseCtor)
           if (res.delay === 0) {
             factory.loading = true
@@ -158,6 +166,7 @@ export function resolveAsyncComponent (
 
     sync = false
     // return in case resolved synchronously
+    // 默认返回loading 没有loading返回factory.resolved真实组件
     return factory.loading
       ? factory.loadingComp
       : factory.resolved

@@ -7819,9 +7819,10 @@ Vue.prototype.$mount = function (
   el,
   hydrating
 ) {
+  // $mount -> mountComponent -> vm实例
   return mountComponent(
-    this,
-    el && query(el, this.$document),
+    this, // this -> vm
+    el && query(el, this.$document), // dom元素
     hydrating
   )
 };

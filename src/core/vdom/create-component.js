@@ -34,6 +34,7 @@ import {
 
 // inline hooks to be invoked on component VNodes during patch
 const componentVNodeHooks = {
+  // 组件的初始化 new Ctor
   init (vnode: VNodeWithData, hydrating: boolean): ?boolean {
     if (
       vnode.componentInstance &&
@@ -44,23 +45,26 @@ const componentVNodeHooks = {
       const mountedNode: any = vnode // work around flow
       componentVNodeHooks.prepatch(mountedNode, mountedNode)
     } else {
+      // 创建组件实例   child ->  new Ctor
       const child = vnode.componentInstance = createComponentInstanceForVnode(
         vnode,
         activeInstance
       )
+      // vm.$mount(undefined) -> 空挂载 -> mountComponent
       child.$mount(hydrating ? vnode.elm : undefined, hydrating)
     }
   },
-
+  // prepatch的作用：复用组件实例，并且可以去更新属性，事件，插槽
   prepatch (oldVnode: MountedComponentVNode, vnode: MountedComponentVNode) {
     const options = vnode.componentOptions
+    // 复用组件实例 -> 也会复用组件实例上的 $el -> dom
     const child = vnode.componentInstance = oldVnode.componentInstance
     updateChildComponent(
       child,
       options.propsData, // updated props
-      options.listeners, // updated listeners
+      options.listeners, // updated listeners 更新事件
       vnode, // new parent vnode
-      options.children // new children
+      options.children // new children 孩子 也就是插槽
     )
   },
 
@@ -97,7 +101,7 @@ const componentVNodeHooks = {
 }
 
 const hooksToMerge = Object.keys(componentVNodeHooks)
-
+// 创建组件的vnode
 export function createComponent (
   Ctor: Class<Component> | Function | Object | void,
   data: ?VNodeData,
@@ -109,11 +113,12 @@ export function createComponent (
   if (isUndef(Ctor)) {
     return
   }
-  debugger
+  // debugger
   // _base -> Vue
   const baseCtor = context.$options._base
 
   // plain options object: turn it into a constructor
+  // 异步组件可不是对象，所以不会走Vue.extend方法
   if (isObject(Ctor)) {
     // Vue.extend({})
     Ctor = baseCtor.extend(Ctor)
@@ -128,15 +133,17 @@ export function createComponent (
     return
   }
 
-  // async component
+  // async component 异步组件来到这里
   let asyncFactory
   if (isUndef(Ctor.cid)) {
     asyncFactory = Ctor
+    // 解析异步组件
     Ctor = resolveAsyncComponent(asyncFactory, baseCtor)
     if (Ctor === undefined) {
       // return a placeholder node for async component, which is rendered
       // as a comment node but preserves all the raw information for the node.
       // the information will be used for async server-rendering and hydration.
+      // 创建一个异步的占位符
       return createAsyncPlaceholder(
         asyncFactory,
         data,
@@ -162,7 +169,9 @@ export function createComponent (
   const propsData = extractPropsFromVNodeData(data, Ctor, tag)
 
   // functional component
+  // 函数式组件
   if (isTrue(Ctor.options.functional)) {
+    // 创建函数式组件 返回vnode
     return createFunctionalComponent(Ctor, propsData, data, context, children)
   }
 
@@ -192,8 +201,11 @@ export function createComponent (
   // return a placeholder vnode
   const name = Ctor.options.name || tag
   const vnode = new VNode(
+    // 组件名字 vue-component-cid-name
     `vue-component-${Ctor.cid}${name ? `-${name}` : ''}`,
+    // data:{ hook:{init,prefetch...} }
     data, undefined, undefined, undefined, context,
+    // componentOptions
     { Ctor, propsData, listeners, tag, children },
     asyncFactory
   )
@@ -226,6 +238,7 @@ export function createComponentInstanceForVnode (
     options.render = inlineTemplate.render
     options.staticRenderFns = inlineTemplate.staticRenderFns
   }
+  // new Ctor -> vm
   return new vnode.componentOptions.Ctor(options)
 }
 
@@ -234,10 +247,12 @@ function installComponentHooks (data: VNodeData) {
   // 组件也有自己的生命周期 init prepatch更新 insert插入 destroy
   for (let i = 0; i < hooksToMerge.length; i++) {
     const key = hooksToMerge[i]
-    // 钩子不存在
+    // 钩子 init ... 是否已经存在钩子了
     const existing = hooks[key]
+    // 取出四个钩子 依次给了 toMerge
     const toMerge = componentVNodeHooks[key]
     if (existing !== toMerge && !(existing && existing._merged)) {
+      // 已经存在过init等某个钩子 则合并hook
       hooks[key] = existing ? mergeHook(toMerge, existing) : toMerge
     }
   }

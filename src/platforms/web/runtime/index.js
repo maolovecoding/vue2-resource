@@ -44,7 +44,7 @@ Vue.prototype.$mount = function (
 ): Component {
   el = el && inBrowser ? query(el) : undefined
   // 组件挂载   hydrating 是否是服务端渲染
-  return mountComponent(this, el, hydrating)
+  return mountComponent(this /* this = vm */, el, hydrating)
 }
 
 // devtools global hook

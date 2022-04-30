@@ -64,8 +64,9 @@ export function lifecycleMixin (Vue: Class<Component>) {
     vm._vnode = vnode
     // Vue.prototype.__patch__ is injected in entry points
     // based on the rendering backend used.
-    if (!prevVnode) {
+    if (!prevVnode) { // null, vnode 初始化渲染
       // initial render
+      // 把组件渲染后的dom元素 给了组件实例的vm.$el
       vm.$el = vm.__patch__(vm.$el, vnode, hydrating, false /* removeOnly */)
     } else {
       // updates
@@ -148,10 +149,11 @@ export function lifecycleMixin (Vue: Class<Component>) {
 // vm.$mount -> mountComponent
 export function mountComponent ( // 组件挂载
   vm: Component,
-  el: ?Element,
+  el: ?Element,// 可能有 组件挂载是没有的
   hydrating?: boolean
 ): Component {
-  vm.$el = el
+  vm.$el = el // 组件 el = undefined
+  // 没有render函数
   if (!vm.$options.render) {
     vm.$options.render = createEmptyVNode
     if (process.env.NODE_ENV !== 'production') {
@@ -177,6 +179,7 @@ export function mountComponent ( // 组件挂载
   callHook(vm, 'beforeMount')
 
   let updateComponent
+  // 开发阶段
   /* istanbul ignore if */
   if (process.env.NODE_ENV !== 'production' && config.performance && mark) {
     updateComponent = () => {
@@ -186,6 +189,7 @@ export function mountComponent ( // 组件挂载
       const endTag = `vue-perf-end:${id}`
 
       mark(startTag)
+      // 拿到vnode
       const vnode = vm._render()
       mark(endTag)
       measure(`vue ${name} render`, startTag, endTag)
@@ -196,6 +200,7 @@ export function mountComponent ( // 组件挂载
       measure(`vue ${name} patch`, startTag, endTag)
     }
   } else {
+    // 生产阶段 组件 挂载 + 更新
     updateComponent = () => {
       vm._update(vm._render(), hydrating)
     }
@@ -206,6 +211,7 @@ export function mountComponent ( // 组件挂载
   // component's mounted hook), which relies on vm._watcher being already defined
   new Watcher(vm, updateComponent, noop, {
     before () {
+      // 组件挂载 且未销毁
       if (vm._isMounted && !vm._isDestroyed) {
         // 更新前执行
         callHook(vm, 'beforeUpdate')
@@ -275,20 +281,29 @@ export function updateChildComponent (
 
   // update props
   if (propsData && vm.$options.props) {
+    /**
+     * 切换响应式为false 不要进行属性值观测
+     * props是父组件data中定义的 然后传递给子组件
+     * 父组件中的数据已经是响应式的了，子组件不需要再把数据变成响应式的了
+     * 因为数据本身就是响应式，子组件再模板中使用属性的时候，
+     * 在props属性值发生更新的时候，会自动更新视图的
+     */
     toggleObserving(false)
     const props = vm._props
     const propKeys = vm.$options._propKeys || []
     for (let i = 0; i < propKeys.length; i++) {
       const key = propKeys[i]
       const propOptions: any = vm.$options.props // wtf flow?
+      // validateProp 校验属性是否符合规范  key: {type:Number}
       props[key] = validateProp(key, propOptions, propsData, vm)
     }
+    // 恢复响应式为true
     toggleObserving(true)
     // keep a copy of raw propsData
     vm.$options.propsData = propsData
   }
 
-  // update listeners
+  // update listeners 更新事件
   listeners = listeners || emptyObject
   const oldListeners = vm.$options._parentListeners
   vm.$options._parentListeners = listeners

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+  <div id="app"></div>
+  <template id="my">
+    <div>
+      <h3>我是组件 传入的数据：{{data}}</h3>
+    </div>
+  </template>
+  <script src="../dist/vue.js"></script>
+  <script>
+    const vm = new Vue({
+      el: "#app",
+      data: {
+        abc: "hello"
+      },
+      template: "<my :data='abc' />",
+      components: {
+        "my": {
+          props: ["data"],
+          template: "#my"
+        }
+      }
+    })
+    setTimeout(()=>{
+      vm.abc = "world"
+    },1000)
+  </script>
+</body>
+
+</html>

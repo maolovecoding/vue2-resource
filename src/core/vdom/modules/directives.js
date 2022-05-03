@@ -19,31 +19,37 @@ function updateDirectives (oldVnode: VNodeWithData, vnode: VNodeWithData) {
 }
 
 function _update (oldVnode, vnode) {
+  // 根据虚拟节点来判断是创建还是删除
   const isCreate = oldVnode === emptyNode
   const isDestroy = vnode === emptyNode
+  // 拿到新旧指令
   const oldDirs = normalizeDirectives(oldVnode.data.directives, oldVnode.context)
   const newDirs = normalizeDirectives(vnode.data.directives, vnode.context)
-
+  // 将插入的钩子缓存起来 等元素插入后调用
   const dirsWithInsert = []
+  // 缓存 componentUpdated
   const dirsWithPostpatch = []
 
   let key, oldDir, dir
   for (key in newDirs) {
     oldDir = oldDirs[key]
     dir = newDirs[key]
+    // 如果没有老的指令 就调用bind方法
     if (!oldDir) {
       // new directive, bind
       callHook(dir, 'bind', vnode, oldVnode)
       if (dir.def && dir.def.inserted) {
+        // 将inserted钩子存到队列中
         dirsWithInsert.push(dir)
       }
     } else {
       // existing directive, update
       dir.oldValue = oldDir.value
       dir.oldArg = oldDir.arg
+      // 调用更新钩子
       callHook(dir, 'update', vnode, oldVnode)
       if (dir.def && dir.def.componentUpdated) {
-        dirsWithPostpatch.push(dir)
+        dirsWithPostpatch.push(dir)// 缓存 componentUpdated钩子
       }
     }
   }
@@ -69,7 +75,7 @@ function _update (oldVnode, vnode) {
     })
   }
 
-  if (!isCreate) {
+  if (!isCreate) { // 删除的话 调用 unbind方法
     for (key in oldDirs) {
       if (!newDirs[key]) {
         // no longer present, unbind

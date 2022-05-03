@@ -35,6 +35,7 @@ const directive = {
       el._vModifiers = binding.modifiers
       if (!binding.modifiers.lazy) {
         el.addEventListener('compositionstart', onCompositionStart)
+        // 监听中文输入完毕的事件
         el.addEventListener('compositionend', onCompositionEnd)
         // Safari < 10.2 & UIWebView doesn't fire compositionend when
         // switching focus before confirming composition choice
@@ -134,6 +135,7 @@ function onCompositionStart (e) {
 function onCompositionEnd (e) {
   // prevent triggering an input event for no reason
   if (!e.target.composing) return
+  // 表示没有进行输入操作了，并手动触发 input事件
   e.target.composing = false
   trigger(e.target, 'input')
 }

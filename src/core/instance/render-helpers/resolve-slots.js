@@ -33,6 +33,7 @@ export function resolveSlots (
         slot.push(child)
       }
     } else {
+      // 组件的默认插槽 default : [孩子vnode]
       (slots.default || (slots.default = [])).push(child)
     }
   }

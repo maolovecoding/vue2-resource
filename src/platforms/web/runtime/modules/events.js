@@ -104,6 +104,7 @@ function remove (
 }
 
 function updateDOMListeners (oldVnode: VNodeWithData, vnode: VNodeWithData) {
+  // 获取vnode中的事件属性
   if (isUndef(oldVnode.data.on) && isUndef(vnode.data.on)) {
     return
   }

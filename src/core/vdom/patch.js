@@ -66,6 +66,7 @@ function createKeyToOldIdx (children, beginIdx, endIdx) {
   }
   return map
 }
+// 虚拟dom不依赖平台代码   backend 节点操作的方法
 // patch -> createPatchFunction -> __patch__
 export function createPatchFunction (backend) {
   let i, j
@@ -227,8 +228,10 @@ export function createPatchFunction (backend) {
       // it should've created a child instance and mounted it. the child
       // component also has set the placeholder vnode's elm.
       // in that case we can just return the element and be done.
+      // 因为实例复用了  实例上就有老的属性
       if (isDef(vnode.componentInstance)) {
         initComponent(vnode, insertedVnodeQueue)
+        // 直接将缓存的dom元素插入
         insert(parentElm, vnode.elm, refElm)
         if (isTrue(isReactivated)) {
           reactivateComponent(vnode, insertedVnodeQueue, parentElm, refElm)
@@ -725,7 +728,6 @@ export function createPatchFunction (backend) {
   }
 
   return function patch (oldVnode, vnode, hydrating, removeOnly) {
-    debugger;
     // 要做删除的时候，patch(oldVNode, null) -> destroy
     if (isUndef(vnode)) {
       if (isDef(oldVnode)) invokeDestroyHook(oldVnode)

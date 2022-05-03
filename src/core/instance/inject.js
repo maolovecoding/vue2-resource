@@ -5,15 +5,19 @@ import { warn, hasSymbol } from '../util/index'
 import { defineReactive, toggleObserving } from '../observer/index'
 
 export function initProvide (vm: Component) {
+  // 在当前组件上通过_provide属性 对应的就是提供的对象
   const provide = vm.$options.provide
   if (provide) {
+    // provide (a:1) -> vm._provide.a = 1
     vm._provided = typeof provide === 'function'
       ? provide.call(vm)
       : provide
   }
 }
-
+// 注入
 export function initInjections (vm: Component) {
+  // inject ["a"] 在自己的父亲里找到对应的属性 递归向上查找
+  // 优先找自己的 _provide提供的属性，然后是父组件 父组件的父组件 ...
   const result = resolveInject(vm.$options.inject, vm)
   if (result) {
     toggleObserving(false)
@@ -29,6 +33,7 @@ export function initInjections (vm: Component) {
           )
         })
       } else {
+        // 把属性定义在自己身上
         defineReactive(vm, key, result[key])
       }
     })
@@ -39,7 +44,7 @@ export function initInjections (vm: Component) {
 export function resolveInject (inject: any, vm: Component): ?Object {
   if (inject) {
     // inject is :any because flow is not smart enough to figure out cached
-    const result = Object.create(null)
+    const result = Object.create(null) // {}
     const keys = hasSymbol
       ? Reflect.ownKeys(inject)
       : Object.keys(inject)
@@ -49,12 +54,15 @@ export function resolveInject (inject: any, vm: Component): ?Object {
       // #6574 in case the inject object is observed...
       if (key === '__ob__') continue
       const provideKey = inject[key].from
-      let source = vm
+      let source = vm // 将当前实例作为开头 向上查找父亲
       while (source) {
         if (source._provided && hasOwn(source._provided, provideKey)) {
+          // 找到了结果 保存在 result中
+          // 先看自己的 _provide 中是否提供了该属性 有就使用自己的
           result[key] = source._provided[provideKey]
           break
         }
+        // 没有就递归向父亲中查找父组件的 _provide属性是否提供
         source = source.$parent
       }
       if (!source) {

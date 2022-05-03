@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+  <div id="app">
+    <my type="password" value="123" />
+  </div>
+  <script src="../dist/vue.js"></script>
+  <script>
+    const vm = new Vue({
+      el: "#app",
+      components: {
+        "my": {
+          inheritAttrs: false,
+          template: `<div>我是my组件：<my-input v-bind="$attrs"  /></div>`,
+          components: {
+            "my-input": {
+              template: `<input v-bind="$attrs"/>`
+            }
+          }
+        }
+      }
+    })
+  </script>
+</body>
+
+</html>

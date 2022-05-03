@@ -16,8 +16,8 @@ export function installRenderHelpers (target: any) {
   target._o = markOnce
   target._n = toNumber
   target._s = toString
-  target._l = renderList
-  target._t = renderSlot
+  target._l = renderList // 列表渲染
+  target._t = renderSlot // 插槽渲染
   target._q = looseEqual
   target._i = looseIndexOf
   target._m = renderStatic

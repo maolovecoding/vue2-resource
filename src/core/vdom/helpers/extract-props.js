@@ -22,11 +22,15 @@ export function extractPropsFromVNodeData (
     return
   }
   const res = {}
+  // attrs 是所有父组件传给子组件的属性  props是子组件定义的父组件传递给子组件的属性
+  // 也就是说 只有定义在 props中的属性，才算是props，其他的只能算是attrs
+  // 其他未定义的属性被称为非props的attrs属性
   const { attrs, props } = data
   if (isDef(attrs) || isDef(props)) {
     for (const key in propOptions) {
       const altKey = hyphenate(key)
       if (process.env.NODE_ENV !== 'production') {
+        // 要求key都是小写
         const keyInLowerCase = key.toLowerCase()
         if (
           key !== keyInLowerCase &&

@@ -14,6 +14,7 @@ export default {
     vnode = locateNode(vnode)
     const transition = vnode.data && vnode.data.transition
     const originalDisplay = el.__vOriginalDisplay =
+    // v-show 会保存默认的display属性 作为原始的display -》 originalDisplay
       el.style.display === 'none' ? '' : el.style.display
     if (value && transition) {
       vnode.data.show = true
@@ -21,6 +22,7 @@ export default {
         el.style.display = originalDisplay
       })
     } else {
+      // v-show 控制显示和隐藏 条件满足 使用原始的display
       el.style.display = value ? originalDisplay : 'none'
     }
   },

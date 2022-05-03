@@ -33,12 +33,12 @@ export default function model (
       )
     }
   }
-
-  if (el.component) {
+  debugger
+  if (el.component) { // 组件的v-model
     genComponentModel(el, value, modifiers)
     // component v-model doesn't need extra runtime
     return false
-  } else if (tag === 'select') {
+  } else if (tag === 'select') { // select 表单元素
     genSelect(el, value, modifiers)
   } else if (tag === 'input' && type === 'checkbox') {
     genCheckboxModel(el, value, modifiers)
@@ -73,6 +73,7 @@ function genCheckboxModel (
   const valueBinding = getBindingAttr(el, 'value') || 'null'
   const trueValueBinding = getBindingAttr(el, 'true-value') || 'true'
   const falseValueBinding = getBindingAttr(el, 'false-value') || 'false'
+  // checked属性 是否选中
   addProp(el, 'checked',
     `Array.isArray(${value})` +
     `?_i(${value},${valueBinding})>-1` + (
@@ -81,6 +82,7 @@ function genCheckboxModel (
         : `:_q(${value},${trueValueBinding})`
     )
   )
+  // 添加change事件
   addHandler(el, 'change',
     `var $$a=${value},` +
         '$$el=$event.target,' +

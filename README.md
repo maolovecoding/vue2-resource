@@ -2075,20 +2075,337 @@ Vue中异步组件的写法有很多。主要用作大的组件进行异步加�
 1. props：父传递数据给儿子
 2. emit ：儿子触发组件更新
 
-### 22. `v-if`和`v-for`那个优先级搞
+**先看props**
+
+```html
+  <div id="app">
+    <my a="123" c="我是父给子的数据" />
+  </div>
+  <script src="../dist/vue.js"></script>
+  <script>
+    const vm = new Vue({
+      data() {
+        return {
+        }
+      },
+      el: "#app",
+      components: {
+        "my": {
+          props: ["c"],
+          // a是普通属性 attrs c是props属性 props->c  attrs->a
+          /*
+          组件的虚拟节点上 {componentOptions: propsData} propsData -> c
+          初始化的时候要对propsData做处理
+          将组件的属性挂载到vm.$options.propsData
+          声明一个 vm._props 类似于 vm._data
+          只有根属性会被观测，其他父组件传递给我们的不需要进行观测
+          将所有的属性定义到 vm._props上
+          vm.c -> vm._props.c
+          */
+          template: `<h2 :c="c">我是组件</h2>`
+        }
+      }
+    })
+  </script>
+```
+
+首先要搞明白，我们父组件传递给子组件的数据，最开始全都是attrs，也就是属性。但是，我们在创建组件的虚拟dom的时候，会把属性进行抽离：如果我们在props中定义了该属性，表名这个属性是父组件传递的props属性，如果没有定义，该属性概述作为attrs属性。
+
+![image-20220430214149996](https://gitee.com/maolovecoding/picture/raw/master/images/web/webpack/image-20220430214149996.png)
+
+![image-20220430221724530](https://gitee.com/maolovecoding/picture/raw/master/images/web/webpack/image-20220430221724530.png)
+
+更新组件的时候，我们会走updateComponentChildren方法
+
+![image-20220430231527888](https://gitee.com/maolovecoding/picture/raw/master/images/web/webpack/image-20220430231527888.png)
+
+总结一下：props的原理就是把解析后的props，验证后将属性定义在当前实例上的`vm._props`.这个对象上的属性都是通过 `defineReactive`方法来定义的。都是响应式的。组件在渲染的过程中，会去vm上的`_props`取值，（_props属性也会被代理到vm上）
+
+**emit方式：**
+
+![image-20220430233500966](https://gitee.com/maolovecoding/picture/raw/master/images/web/webpack/image-20220430233500966.png)
+
+使用emit进行组件通信，那么用到的就是发布订阅模式。
+
+```js
+my.$on("cb",cb)
+```
+
+在创建虚拟节点的时候将所有事件，绑定到了listeners，如果是有修饰符`.native`修饰的事件，会绑定在组件上，最后在nativeOn属性上。在ininEvents方法内，将事件通过add（其实就是$on）方法绑定事件，通过$emit触发事件。
+
+![image-20220501102707287](https://gitee.com/maolovecoding/picture/raw/master/images/web/webpack/image-20220501102707287.png)
+
+**eventBus**原理就是发布订阅， `$bus = new Vue()`简单的通信可以采用这种方式，但是对于多个组件之间相互通信，会显得有些混乱。
+
+对于 **$parent,$children**，就是在创造子组件的时候，会将父组件的实例传入，在组件本身初始化的时候会构建组件间的父子关系，$parent获取父组件实例，通过$children获取所有的子组件实例。开发中也不建议使用。（$parent.$parent... 岂不是回到了jquery）
+
+![image-20220501103103930](https://gitee.com/maolovecoding/picture/raw/master/images/web/webpack/image-20220501103103930.png)
+
+**ref**原理：
+
+- ref可以获取dom元素和组件的实例，（虚拟dom没有处理ref，这里无法拿到实例，也无法获取组件）
+- 创建dom的时候是如何处理ref的
+- 会将用户所有的dom操作及属性，都维护到一个cbs属性中，（create，update，insert，destory....）依次调用cbs中的create方法，这里就包含ref相关的操作，会操作ref，并且赋值。
+
+![image-20220501130014260](https://gitee.com/maolovecoding/picture/raw/master/images/web/webpack/image-20220501130014260.png)
+
+**inject，provide**
+
+在父组件通将属性暴露出来，在后代属组件中注入属性。（**少用**）
+
+父级组件提供的数据，在子组件中递归查找，找到就定义在自己的身上。
+
+![image-20220501131318169](https://gitee.com/maolovecoding/picture/raw/master/images/web/webpack/image-20220501131318169.png)
+
+**$attrs, $listeners**
+
+- $attrs：所有组件上的属性，不涵盖props
+- $listeners：组件上所有的事件
+
+![image-20220501132237053](https://gitee.com/maolovecoding/picture/raw/master/images/web/webpack/image-20220501132237053.png)
+
+通过$attrs属性，可以快速的把非props的属性传递给子组件
+
+![image-20220501133453020](https://gitee.com/maolovecoding/picture/raw/master/images/web/webpack/image-20220501133453020.png)
+
+![image-20220501133506770](https://gitee.com/maolovecoding/picture/raw/master/images/web/webpack/image-20220501133506770.png)
+
+**其实**还有一个Vue.observal，可以创造一个全局的对象用于通信
+
+### 22. `v-if`和`v-for`那个优先级高
+
+先说结论：`v-for`的优先级比`v-if`高。
+
+在编译的时候，会将v-for渲染成_l函数，v-if会变成三元表达式。
+
+注意：实际开发时，在一个标签上，不要同时使用v-for和v-if，二者不要连着用。
+
+![image-20220501164905895](https://gitee.com/maolovecoding/picture/raw/master/images/web/webpack/image-20220501164905895.png)
+
+![image-20220501164949473](https://gitee.com/maolovecoding/picture/raw/master/images/web/webpack/image-20220501164949473.png)
+
+**v-if和v-show的区别：**
+
+- v-show：是控制样式，通过`display:none`控制元素的显示和隐藏。
+- v-if：控制是否渲染dom
+
+为什么v-show控制样式，是通过display来进行控制元素的显示和隐藏的？而不是选择通过透明度opacity或者visibility？
+
+**v-if编译的时候会变成三元表达式，但是v-show会编译为一个指令**
+
+之所以不采用visibility:hidden，因为这样做了该元素仍然会占位，只是不可见（也不会响应事件了）;而透明度opacity在为0的情况下，也不可见，但是也仍然占位，且会响应事件
+
+![image-20220501170915501](https://gitee.com/maolovecoding/picture/raw/master/images/web/webpack/image-20220501170915501.png)
 
 ### 23. `v-if`,`v-model`,`v-for`的实现原理是什么
 
+**v-if已经说没了。**
+
+**v-for**：还是一样，会被渲染为 _l函数
+
+![image-20220501172516729](https://gitee.com/maolovecoding/picture/raw/master/images/web/webpack/image-20220501172516729.png)
+
+#### v-model
+
+v-model实现双向数据绑定。放在表单元素上可以实现双向数据绑定，放在组件上不一样。
+
+- v-model放在不同的元素上，会编译出不同的结果：针对文本来说就会处理文本（会被编译成value+input+指令处理）
+- value和input实现双向数据绑定，阻止中文的触发，指令作用就是处理中文输入完毕后，手动触发更新。
+
+v-model绑定到组件上，这里会编译成一个model对象，组件在创建虚拟节点的时候，会利用这个对象，会看一下里面是否有自定义的prop和event，如果没有则会被解析为value+input的语法糖
+
 ### 24. `Vue`中的`slot`是如何实现的？什么时候使用它？
+
+- 普通（默认）插槽：
+  - 普通插槽渲染作用域是在父组件中完成的
+  - 在解析组件的时候会将组件的children放到componentOptions的children上，作为虚拟节点的属性
+  - 将children取出放到组件的 vm.$options._renderChildren中
+  - 做出一个映射表，放到vm.$slots上，将结果放到vm.$scopedSlots上
+  - `vm.$scopedSlots: {a:fn,b:fn,default:fn}`4
+  - 渲染组件的时候，会调用 _t方法，此时会去vm.$scopedSlots找到对应的函数来渲染内容
+- 具名插槽：
+  - 多增加了一个name，也就是名字
+- 作用域插槽：
+  - 作用域是在子组件中。作用域插槽渲染的时候不会作为children，将作用域插槽做成了一个属性scopedSlots
+  - 制作一个映射关系 $scopedSlots = {default “”: fn:function(){}}
+  - 稍后在渲染组件的模板的时候，会通过name找到对应的函数，将数据传入到函数中，此时才渲染虚拟节点，用这个虚拟节点替换 _t函数
+
+组件的孩子j叫插槽，元素的孩子还是孩子。
+
+- 创建组件的真实节点`this.$slots = {default:[儿子vnode]}`
 
 ### 25. `Vue.use`是干什么的？原理是什么？
 
+用来实现插件的。参数一般是一个函数，函数接收Vue的构造函数和额外的选项。
+
+```js
+function plugin(Vue,options){}
+
+Vue.use(plugin)
+```
+
+![image-20220502182659504](https://gitee.com/maolovecoding/picture/raw/master/images/web/webpack/image-20220502182659504.png)
+
+使用Vue的use函数，是专门用来注册插件的。可以防止Vue的版本不统一。也不会让Vue-router，vuex等插件直接依赖于vue，我们只需要在使用这些插件的时候注册插件就可以了。
+
+使用vue函数的目的，就是将vue构造函数传递给插件，让所有的插件依赖的vue是同一个版本。该发方法的源码本身并不难。
+
+例如vue-router和vuex等插件，都没有依赖vue，在项目的package-json文件里面也没依赖vue，是通过参数形式传入的。
+
+插件并不会进行重复安装的。
+
 ### 26. `Vue`事件修饰符有哪些？及其实现原理是什么？
+
+实现原理只要是靠的是模板编译原理。.stop .prevent等修饰符是直接编译到事件内部了。
+
+对于.passive, capture, .once在编译的时候增加标识 `! ~ &`
+
+键盘事件，也是通过模板编译来实现的。
 
 ### 27. `Vue`中的 `.sync` 修饰符的作用，用法及其实现原理
 
+- 和v-model一样，这个api是为了实现状态同步的。这个东西在vue3中移除了。
+
+没什么意思，有需要的查文档。
+
 ### 28. 如何理解自定义指令
+
+自定义指令，就是用户定义好对应的钩子，当元素在不同的状态时，会调用对应的钩子。所有的钩子会被合并到cbs对应的方法上，到时候会被依次调用
+
+![image-20220503132159508](https://gitee.com/maolovecoding/picture/raw/master/images/web/webpack/image-20220503132159508.png)
 
 ### 29. `keep-alive`平时在哪里使用？原理是什么
 
+1. 在路由中使用
+2. 在`component:is`中使用
+
+keep-alive的原理是默认缓存加载过的组件对应的实例，内部采用了LRU算法。下次组件切换加载的时候，此时会找到对应缓存的虚拟节点来进行初始化（走了初始化，但是没有进行真正的初始化，init -> prepatch），但是会采用上次缓存的实例上的$el来触发。
+
+更新和销毁会触发actived和deactived的钩子
+
+```js
+export default {
+  name: 'keep-alive',
+  // 抽象组件 不会被记录到 $children 和 $parent上
+  abstract: true,
+
+  props: {// 属性
+    // 可以缓存那些组件
+    include: patternTypes,
+    // 可以排除那些组件
+    exclude: patternTypes,
+    // 最大缓存个数
+    max: [String, Number]
+  },
+
+  methods: {
+    cacheVNode() {
+      const { cache, keys, vnodeToCache, keyToCache } = this
+      if (vnodeToCache) {
+        const { tag, componentInstance, componentOptions } = vnodeToCache
+        cache[keyToCache] = {
+          // 缓存中 放置需要缓存的组件 存放组件的实例
+          name: getComponentName(componentOptions),
+          tag,
+          componentInstance, // 组件实例渲染后 会有 $el属性 下次直接复用 $el
+        }
+        keys.push(keyToCache) // 放入key
+        // prune oldest entry
+        // 超过最大长度 会移除最长时间未使用的缓存
+        if (this.max && keys.length > parseInt(this.max)) {
+          pruneCacheEntry(cache, keys[0], keys, this._vnode)
+        }
+        this.vnodeToCache = null
+      }
+    }
+  },
+
+  created () {
+    // 创建一个缓存区 {}
+    this.cache = Object.create(null)
+    // 缓存组件的名字有哪些 []
+    this.keys = []
+  },
+
+  destroyed () {
+    for (const key in this.cache) {
+      pruneCacheEntry(this.cache, key, this.keys)
+    }
+  },
+
+  mounted () {
+    // 渲染完成后 缓存vnode
+    this.cacheVNode()
+    this.$watch('include', val => {
+      pruneCache(this, name => matches(val, name))
+    })
+    this.$watch('exclude', val => {
+      pruneCache(this, name => !matches(val, name))
+    })
+  },
+
+  updated () {
+    this.cacheVNode()
+  },
+
+  render () {
+    // 取出默认插槽
+    const slot = this.$slots.default
+    // 获取插槽中的第一个vnode
+    const vnode: VNode = getFirstComponentChild(slot)
+    // 拿到第一个插槽上的组件的额外选项 {Ctor, propsData, listeners, tag, children }
+    const componentOptions: ?VNodeComponentOptions = vnode && vnode.componentOptions
+    if (componentOptions) {
+      // check pattern 获取组件的名字 看组件是否加载过
+      const name: ?string = getComponentName(componentOptions)
+      // 校验是否需要缓存
+      const { include, exclude } = this
+      if ( // 这些情况不需要复用
+        // not included 不需要缓存
+        (include && (!name || !matches(include, name))) ||
+        // excluded 排除的
+        (exclude && name && matches(exclude, name))
+      ) {
+        return vnode
+      }
+      // 缓存对象 {} []
+      const { cache, keys } = this
+      // 生成一个唯一的 key
+      const key: ?string = vnode.key == null
+        // same constructor may get registered as different local components
+        // so cid alone is not enough (#3269)
+        ? componentOptions.Ctor.cid + (componentOptions.tag ? `::${componentOptions.tag}` : '')
+        : vnode.key
+      if (cache[key]) { // key缓存过
+        // 获取缓存的实例
+        vnode.componentInstance = cache[key].componentInstance
+        // make current key freshest
+        remove(keys, key) // 把当前的key作为最新的
+        keys.push(key)
+      } else {
+        // delay setting the cache until update
+        // 以前没有缓存过 将当前的vnode进行缓存 缓存key
+        this.vnodeToCache = vnode
+        this.keyToCache = key
+      }
+      // 给虚拟节点增加标识 data: keepAlive:true
+      vnode.data.keepAlive = true
+    }
+    // vnode上有 data.keepAlive 和 componentInstance 说明vnode缓存过
+    return vnode || (slot && slot[0]) // 返回vnode
+  }
+}
+```
+
 ### 30. 组件中写`name`选项有哪些好处及作用？
+
+在vue中有name属性的组件可以被递归调用。（这里可以被类比我们的匿名函数具名化）
+
+在声明组件的时候，`Sub.options[name] = 组件`
+
+![image-20220502184432294](https://gitee.com/maolovecoding/picture/raw/master/images/web/webpack/image-20220502184432294.png)
+
+- 我们用来标识组件，通过name可以找到该组件。也可以自己封装跨级通信
+- name属性还能用作devtool调试工具，来标明具体的组件。
+
+**主要用作组件递归和起到标识作用**

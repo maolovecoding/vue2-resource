@@ -25,6 +25,7 @@ const normalizeEvent = cached((name: string): {
   name = once ? name.slice(1) : name
   const capture = name.charAt(0) === '!'
   name = capture ? name.slice(1) : name
+  // 这里在绑定事件的时候 会进行转义
   return {
     name,
     once,

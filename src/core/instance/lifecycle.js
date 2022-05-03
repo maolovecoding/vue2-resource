@@ -33,6 +33,7 @@ export function initLifecycle (vm: Component) {
   const options = vm.$options
 
   // locate first non-abstract parent
+  // 父组件
   let parent = options.parent
   if (parent && !options.abstract) {
     while (parent.$options.abstract && parent.$parent) {
@@ -40,11 +41,12 @@ export function initLifecycle (vm: Component) {
     }
     parent.$children.push(vm)
   }
-
+  // 创建当前组件和父组件的关系
   vm.$parent = parent
   vm.$root = parent ? parent.$root : vm
-
+  // 用来创建当前组件和子组件的关系
   vm.$children = []
+  // ref
   vm.$refs = {}
 
   vm._watcher = null
@@ -60,6 +62,7 @@ export function lifecycleMixin (Vue: Class<Component>) {
     const vm: Component = this
     const prevEl = vm.$el
     const prevVnode = vm._vnode
+    // 设置当前组件实例到全局上
     const restoreActiveInstance = setActiveInstance(vm)
     vm._vnode = vnode
     // Vue.prototype.__patch__ is injected in entry points
@@ -289,6 +292,7 @@ export function updateChildComponent (
      * 在props属性值发生更新的时候，会自动更新视图的
      */
     toggleObserving(false)
+    // 拿到props进行更新
     const props = vm._props
     const propKeys = vm.$options._propKeys || []
     for (let i = 0; i < propKeys.length; i++) {
@@ -299,7 +303,7 @@ export function updateChildComponent (
     }
     // 恢复响应式为true
     toggleObserving(true)
-    // keep a copy of raw propsData
+    // keep a copy of raw propsData 每次更新 都保留一份原始的props
     vm.$options.propsData = propsData
   }
 
@@ -326,7 +330,7 @@ function isInInactiveTree (vm) {
   }
   return false
 }
-
+// 正在创建的子组件
 export function activateChildComponent (vm: Component, direct?: boolean) {
   if (direct) {
     vm._directInactive = false

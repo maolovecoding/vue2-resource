@@ -14,17 +14,18 @@ export function renderList (
   ) => VNode
 ): ?Array<VNode> {
   let ret: ?Array<VNode>, i, l, keys, key
+  // 数组或者字符串
   if (Array.isArray(val) || typeof val === 'string') {
     ret = new Array(val.length)
-    for (i = 0, l = val.length; i < l; i++) {
+    for (i = 0, l = val.length; i < l; i++) { // _l 就是循环每一项调用的回调
       ret[i] = render(val[i], i)
     }
-  } else if (typeof val === 'number') {
+  } else if (typeof val === 'number') { // i in 10
     ret = new Array(val)
     for (i = 0; i < val; i++) {
       ret[i] = render(i + 1, i)
     }
-  } else if (isObject(val)) {
+  } else if (isObject(val)) { // i in {name:"张三",age:22}
     if (hasSymbol && val[Symbol.iterator]) {
       ret = []
       const iterator: Iterator<any> = val[Symbol.iterator]()
@@ -34,6 +35,7 @@ export function renderList (
         result = iterator.next()
       }
     } else {
+      // 类数组
       keys = Object.keys(val)
       ret = new Array(keys.length)
       for (i = 0, l = keys.length; i < l; i++) {

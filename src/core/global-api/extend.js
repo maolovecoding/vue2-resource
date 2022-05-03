@@ -69,6 +69,7 @@ export function initExtend (Vue: GlobalAPI) {
     })
     // enable recursive self-lookup
     if (name) {
+      // 组件有name属性，则可以自己调用自己
       Sub.options.components[name] = Sub
     }
 

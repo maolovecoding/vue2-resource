@@ -63,8 +63,10 @@ export function genElement (el: ASTElement, state: CodegenState): string {
   } else if (el.once && !el.onceProcessed) {
     return genOnce(el, state)
   } else if (el.for && !el.forProcessed) {
+    // 代码生成 v-for会先生成
     return genFor(el, state)
   } else if (el.if && !el.ifProcessed) {
+    // v-if 然后出了v-if
     return genIf(el, state)
   } else if (el.tag === 'template' && !el.slotTarget && !state.pre) {
     return genChildren(el, state) || 'void 0'
@@ -190,6 +192,7 @@ export function genFor (
   altGen?: Function,
   altHelper?: string
 ): string {
+  // for表达式
   const exp = el.for
   const alias = el.alias
   const iterator1 = el.iterator1 ? `,${el.iterator1}` : ''
@@ -211,6 +214,7 @@ export function genFor (
   }
 
   el.forProcessed = true // avoid recursion
+  // v-for -> 生成 _l函数
   return `${altHelper || '_l'}((${exp}),` +
     `function(${alias}${iterator1}${iterator2}){` +
       `return ${(altGen || genElement)(el, state)}` +

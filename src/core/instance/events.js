@@ -20,11 +20,11 @@ export function initEvents (vm: Component) {
 }
 
 let target: any
-
+// 绑定事件
 function add (event, fn) {
   target.$on(event, fn)
 }
-
+// 移除事件
 function remove (event, fn) {
   target.$off(event, fn)
 }
@@ -38,7 +38,7 @@ function createOnceHandler (event, fn) {
     }
   }
 }
-
+// 更新 绑定事件
 export function updateComponentListeners (
   vm: Component,
   listeners: Object,

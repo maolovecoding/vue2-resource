@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+  <div id="app">
+    <my ref="my" a="123" c="我是父给子的数据" @cb="cb" />
+  </div>
+  <script src="../dist/vue.js"></script>
+  <script>
+    const vm = new Vue({
+      data() {
+        return {
+        }
+      },
+      methods: {
+        cb(arg) {
+          console.log(arg)
+        }
+      },
+      el: "#app",
+      components: {
+        "my": {
+          props: ["c"],
+          // a是普通属性 attrs c是props属性 props->c  attrs->a
+          /*
+          组件的虚拟节点上 {componentOptions: propsData} propsData -> c
+          初始化的时候要对propsData做处理
+          将组件的属性挂载到vm.$options.propsData
+          声明一个 vm._props 类似于 vm._data
+          只有根属性会被观测，其他父组件传递给我们的不需要进行观测
+          将所有的属性定义到 vm._props上
+          vm.c -> vm._props.c
+          */
+          template: `<h2 :c="c" @click="$emit('cb',2)">我是组件</h2>`
+        }
+      }
+    })
+  </script>
+</body>
+
+</html>

@@ -43,6 +43,7 @@ const componentVNodeHooks = {
     ) {
       // kept-alive components, treat as a patch
       const mountedNode: any = vnode // work around flow
+      // 如果缓存过 则直接走 prepatch 不走初始化流程了
       componentVNodeHooks.prepatch(mountedNode, mountedNode)
     } else {
       // 创建组件实例   child ->  new Ctor
@@ -59,6 +60,7 @@ const componentVNodeHooks = {
     const options = vnode.componentOptions
     // 复用组件实例 -> 也会复用组件实例上的 $el -> dom
     const child = vnode.componentInstance = oldVnode.componentInstance
+    // 组件更新
     updateChildComponent(
       child,
       options.propsData, // updated props
@@ -166,6 +168,7 @@ export function createComponent (
   }
 
   // extract props
+  // 处理 props的 在子组件中的props中定义的属性分离出来到 propsData中
   const propsData = extractPropsFromVNodeData(data, Ctor, tag)
 
   // functional component
@@ -177,9 +180,11 @@ export function createComponent (
 
   // extract listeners, since these needs to be treated as
   // child component listeners instead of DOM listeners
+  // 发布订阅模式 在组件上监听的事件 @cb="cb" -> on: {cb:f cb }
   const listeners = data.on
   // replace with listeners with .native modifier
   // so it gets processed during parent component patch.
+  // 在组件上监听的事件 原始事件 @click.native="cb"
   data.on = data.nativeOn
 
   if (isTrue(Ctor.options.abstract)) {
@@ -205,7 +210,7 @@ export function createComponent (
     `vue-component-${Ctor.cid}${name ? `-${name}` : ''}`,
     // data:{ hook:{init,prefetch...} }
     data, undefined, undefined, undefined, context,
-    // componentOptions
+    // componentOptions 插槽内容在父组件中编译完毕后 放到了 componentOptions.children属性上
     { Ctor, propsData, listeners, tag, children },
     asyncFactory
   )

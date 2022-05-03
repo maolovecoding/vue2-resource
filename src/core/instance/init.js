@@ -78,7 +78,7 @@ export function initMixin (Vue: Class<Component>) {
     }
   }
 }
-
+// 初始化内部组件
 export function initInternalComponent (vm: Component, options: InternalComponentOptions) {
   const opts = vm.$options = Object.create(vm.constructor.options)
   // doing this because it's faster than dynamic enumeration.
@@ -87,9 +87,11 @@ export function initInternalComponent (vm: Component, options: InternalComponent
   opts._parentVnode = parentVnode
 
   const vnodeComponentOptions = parentVnode.componentOptions
-  opts.propsData = vnodeComponentOptions.propsData
-  opts._parentListeners = vnodeComponentOptions.listeners
-  opts._renderChildren = vnodeComponentOptions.children
+  // vm.$options.propsData -》 props
+  opts.propsData = vnodeComponentOptions.propsData // props属性
+  // 事件 @cb="cb" -> $on(`cb`,cb)
+  opts._parentListeners = vnodeComponentOptions.listeners // 事件
+  opts._renderChildren = vnodeComponentOptions.children // 组件插槽
   opts._componentTag = vnodeComponentOptions.tag
 
   if (options.render) {
